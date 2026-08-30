@@ -1,0 +1,910 @@
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
+
+const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1020" width="2400" height="1020">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8F4FD" />
+      <stop offset="45%" stop-color="#F2F8FE" />
+      <stop offset="75%" stop-color="#E1EFFE" />
+      <stop offset="100%" stop-color="#D0E5FC" />
+    </linearGradient>
+
+    <!-- Sun Glow -->
+    <radialGradient id="sunGlow" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#E0F2FE" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#E0F2FE" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Cloud Gradients -->
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#E1EFFE" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- City Skyline Silhouette Gradient -->
+    <linearGradient id="distantCityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A5C8EE" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#C5DCF5" stop-opacity="0.2" />
+    </linearGradient>
+
+    <linearGradient id="midCityGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7CA8D8" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#A9C7E8" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Road Gradients -->
+    <linearGradient id="roadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#55657E" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+
+    <linearGradient id="sidewalkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+
+    <linearGradient id="curbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94A3B8" />
+      <stop offset="100%" stop-color="#64748B" />
+    </linearGradient>
+
+    <!-- Card Shadow Filter -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0284C7" flood-opacity="0.12" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06" />
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Building Specific Gradients -->
+    <linearGradient id="factoryWall" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4B77BE" />
+      <stop offset="60%" stop-color="#3B67AE" />
+      <stop offset="100%" stop-color="#2D5494" />
+    </linearGradient>
+
+    <linearGradient id="hospitalWall" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+
+    <linearGradient id="schoolWall" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E59866" />
+      <stop offset="50%" stop-color="#D3824E" />
+      <stop offset="100%" stop-color="#BA6837" />
+    </linearGradient>
+
+    <linearGradient id="hotelGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="30%" stop-color="#0284C7" />
+      <stop offset="70%" stop-color="#0369A1" />
+      <stop offset="100%" stop-color="#075985" />
+    </linearGradient>
+
+    <linearGradient id="cinemaWall" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+
+    <linearGradient id="spaWall" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F472B6" />
+      <stop offset="50%" stop-color="#EC4899" />
+      <stop offset="100%" stop-color="#DB2777" />
+    </linearGradient>
+
+    <!-- Glass Reflection Pattern -->
+    <linearGradient id="glassReflect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.1" />
+      <stop offset="60%" stop-color="#0284C7" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#0369A1" stop-opacity="0.5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Sky Canvas -->
+  <rect width="2400" height="1020" fill="url(#skyGrad)" />
+  <circle cx="1200" cy="350" r="800" fill="url(#sunGlow)" />
+
+  <!-- Soft Fluffy Clouds in Sky -->
+  <g fill="url(#cloudGrad)">
+    <ellipse cx="280" cy="220" rx="140" ry="50" />
+    <ellipse cx="360" cy="190" rx="90" ry="60" />
+    <ellipse cx="220" cy="230" rx="90" ry="40" />
+
+    <ellipse cx="780" cy="320" rx="180" ry="60" />
+    <ellipse cx="850" cy="280" rx="110" ry="70" />
+    <ellipse cx="710" cy="330" rx="100" ry="45" />
+
+    <ellipse cx="1680" cy="260" rx="160" ry="55" />
+    <ellipse cx="1760" cy="220" rx="100" ry="65" />
+    <ellipse cx="1600" cy="270" rx="90" ry="45" />
+
+    <ellipse cx="2180" cy="210" rx="150" ry="50" />
+    <ellipse cx="2260" cy="180" rx="90" ry="55" />
+  </g>
+
+  <!-- Airplane in Upper Right -->
+  <g transform="translate(2220, 520) scale(0.9) rotate(-8)">
+    <path d="M0,0 L70,-15 L120,-18 L125,-28 L115,-28 L75,-16 L35,-12 L-10,-45 L-25,-43 L10,-8 L-40,-2 L-60,-22 L-72,-20 L-55,2 L-70,5 L-70,10 L-45,6 L10,8 L-25,43 L-10,45 L35,12 L75,16 L115,28 L125,28 L120,18 L70,15 Z" fill="#0284C7" />
+    <path d="M20,-2 L90,-8 L105,-2 L20,-2 Z" fill="#38BDF8" opacity="0.6" />
+    <!-- Contrail -->
+    <path d="M-70,7 Q-130,12 -200,20" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.6" stroke-dasharray="6,6" />
+  </g>
+
+  <!-- Distant Background City Skyline Silhouette -->
+  <g fill="url(#distantCityGrad)">
+    <rect x="180" y="520" width="70" height="240" rx="4" />
+    <rect x="230" y="480" width="80" height="280" rx="4" />
+    <rect x="420" y="550" width="60" height="210" rx="4" />
+    <rect x="470" y="500" width="75" height="260" rx="4" />
+    <polygon points="507,450 485,500 530,500" />
+    
+    <rect x="680" y="530" width="65" height="230" rx="4" />
+    <rect x="730" y="490" width="85" height="270" rx="4" />
+    <rect x="940" y="560" width="60" height="200" rx="4" />
+    <rect x="990" y="520" width="70" height="240" rx="4" />
+
+    <rect x="1200" y="500" width="90" height="260" rx="4" />
+    <polygon points="1245,430 1215,500 1275,500" />
+    <rect x="1280" y="540" width="70" height="220" rx="4" />
+    <rect x="1340" y="470" width="80" height="290" rx="4" />
+
+    <rect x="1500" y="490" width="75" height="270" rx="4" />
+    <rect x="1750" y="540" width="70" height="220" rx="4" />
+    <rect x="1810" y="510" width="80" height="250" rx="4" />
+    <rect x="2000" y="530" width="85" height="230" rx="4" />
+    <rect x="2080" y="490" width="70" height="270" rx="4" />
+  </g>
+
+  <!-- Midground City Skyline -->
+  <g fill="url(#midCityGrad)">
+    <rect x="340" y="540" width="90" height="220" rx="6" />
+    <rect x="600" y="520" width="95" height="240" rx="6" />
+    <rect x="860" y="550" width="85" height="210" rx="6" />
+    <rect x="1380" y="450" width="90" height="310" rx="6" />
+    <polygon points="1425,390 1390,450 1460,450" />
+    <line x1="1425" y1="390" x2="1425" y2="350" stroke="#0284C7" stroke-width="3" />
+    <circle cx="1425" cy="350" r="4" fill="#EF4444" />
+
+    <rect x="1460" y="500" width="80" height="260" rx="6" />
+    <rect x="1650" y="530" width="100" height="230" rx="6" />
+  </g>
+
+  <!-- Ferris Wheel behind Entertainment Area -->
+  <g transform="translate(1780, 620)" stroke="#93C5FD" stroke-width="4" fill="none">
+    <circle cx="0" cy="0" r="100" stroke="#60A5FA" stroke-width="5" />
+    <circle cx="0" cy="0" r="40" stroke="#93C5FD" stroke-width="3" />
+    <line x1="0" y1="-100" x2="0" y2="100" />
+    <line x1="-100" y1="0" x2="100" y2="0" />
+    <line x1="-70" y1="-70" x2="70" y2="70" />
+    <line x1="-70" y1="70" x2="70" y2="-70" />
+    <!-- Ferris Wheel Support Legs -->
+    <path d="M0,0 L-50,140 M0,0 L50,140" stroke="#3B82F6" stroke-width="6" />
+    <!-- Cabins -->
+    <g fill="#EF4444" stroke="none">
+      <circle cx="0" cy="-100" r="8" fill="#F59E0B" />
+      <circle cx="70" cy="-70" r="8" fill="#10B981" />
+      <circle cx="100" cy="0" r="8" fill="#3B82F6" />
+      <circle cx="70" cy="70" r="8" fill="#8B5CF6" />
+      <circle cx="0" cy="100" r="8" fill="#EC4899" />
+      <circle cx="-70" cy="70" r="8" fill="#F59E0B" />
+      <circle cx="-100" cy="0" r="8" fill="#10B981" />
+      <circle cx="-70" cy="-70" r="8" fill="#3B82F6" />
+    </g>
+  </g>
+
+  <!-- Elevated Monorail & Train (Travel sector) -->
+  <g id="monorail-track">
+    <!-- Elevated Bridge Pylons -->
+    <rect x="1860" y="660" width="18" height="100" fill="#94A3B8" rx="4" />
+    <rect x="2040" y="660" width="18" height="100" fill="#94A3B8" rx="4" />
+    <rect x="2220" y="660" width="18" height="100" fill="#94A3B8" rx="4" />
+    <rect x="2380" y="660" width="18" height="100" fill="#94A3B8" rx="4" />
+    <!-- Bridge Track Beam -->
+    <path d="M1840,660 Q2100,645 2400,635" stroke="#CBD5E1" stroke-width="16" fill="none" stroke-linecap="round" />
+    <path d="M1840,654 Q2100,639 2400,629" stroke="#0284C7" stroke-width="5" fill="none" />
+    
+    <!-- Sleek High Speed Metro Train -->
+    <g transform="translate(1980, 620) rotate(-2)">
+      <rect x="0" y="0" width="180" height="34" rx="14" fill="#FFFFFF" stroke="#0284C7" stroke-width="2" />
+      <path d="M0,0 L180,0 L180,12 L0,12 Z" fill="#0284C7" />
+      <rect x="15" y="14" width="22" height="12" rx="3" fill="#38BDF8" />
+      <rect x="45" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+      <rect x="80" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+      <rect x="115" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+      <path d="M150,14 L172,18 L170,26 L150,26 Z" fill="#38BDF8" />
+      <circle cx="172" cy="22" r="3" fill="#F59E0B" />
+      <!-- Train Carriage 2 -->
+      <rect x="186" y="2" width="140" height="32" rx="10" fill="#FFFFFF" stroke="#0284C7" stroke-width="2" />
+      <path d="M186,2 L326,2 L326,14 L186,14 Z" fill="#0284C7" />
+      <rect x="196" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+      <rect x="230" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+      <rect x="264" y="14" width="26" height="12" rx="3" fill="#38BDF8" />
+    </g>
+  </g>
+
+  <!-- Airport Traffic Control Tower -->
+  <g transform="translate(1930, 560)">
+    <path d="M20,180 L32,60 L58,60 L70,180 Z" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="2" />
+    <!-- Tower Head Glass Observation Deck -->
+    <polygon points="15,60 75,60 85,30 5,30" fill="#0284C7" />
+    <polygon points="20,55 70,55 78,35 12,35" fill="#38BDF8" />
+    <rect x="25" y="18" width="40" height="12" rx="3" fill="#FFFFFF" />
+    <!-- Radar Dome & Spire -->
+    <ellipse cx="45" cy="18" rx="18" ry="10" fill="#0284C7" />
+    <line x1="45" y1="18" x2="45" y2="-10" stroke="#64748B" stroke-width="3" />
+    <circle cx="45" cy="-10" r="3" fill="#EF4444" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- FOREGROUND BUILDINGS (11 PRIMARY SECTORS) -->
+  <!-- ============================================== -->
+
+  <!-- 1. INDUSTRY: Factory Building with Smokestacks -->
+  <g id="building-industry" transform="translate(100, 540)">
+    <!-- Smokestacks -->
+    <g transform="translate(30, 0)">
+      <!-- Stack 1 -->
+      <path d="M10,130 L16,0 L34,0 L40,130 Z" fill="#F1F5F9" />
+      <rect x="15" y="15" width="20" height="16" fill="#EF4444" />
+      <rect x="13" y="55" width="24" height="16" fill="#EF4444" />
+      <ellipse cx="25" cy="0" rx="9" ry="3" fill="#334155" />
+      <!-- Soft Steam -->
+      <ellipse cx="25" cy="-18" rx="16" ry="10" fill="#FFFFFF" opacity="0.7" />
+      <ellipse cx="32" cy="-35" rx="22" ry="14" fill="#FFFFFF" opacity="0.5" />
+    </g>
+    <g transform="translate(75, 10)">
+      <!-- Stack 2 -->
+      <path d="M10,120 L16,0 L34,0 L40,120 Z" fill="#F1F5F9" />
+      <rect x="15" y="15" width="20" height="16" fill="#EF4444" />
+      <rect x="13" y="50" width="24" height="16" fill="#EF4444" />
+      <ellipse cx="25" cy="0" rx="9" ry="3" fill="#334155" />
+      <!-- Soft Steam -->
+      <ellipse cx="25" cy="-18" rx="16" ry="10" fill="#FFFFFF" opacity="0.7" />
+      <ellipse cx="35" cy="-40" rx="24" ry="15" fill="#FFFFFF" opacity="0.4" />
+    </g>
+    <g transform="translate(120, 20)">
+      <!-- Stack 3 -->
+      <path d="M10,110 L16,0 L34,0 L40,110 Z" fill="#F1F5F9" />
+      <rect x="15" y="15" width="20" height="16" fill="#EF4444" />
+      <rect x="13" y="45" width="24" height="16" fill="#EF4444" />
+      <ellipse cx="25" cy="0" rx="9" ry="3" fill="#334155" />
+    </g>
+
+    <!-- Factory Main Structure -->
+    <rect x="0" y="130" width="180" height="120" rx="6" fill="url(#factoryWall)" />
+    <!-- Sawtooth Roof -->
+    <polygon points="0,130 45,95 45,130 90,95 90,130 135,95 135,130 180,95 180,130" fill="#1E3A8A" />
+    <!-- Windows & Bay Doors -->
+    <rect x="20" y="150" width="30" height="24" rx="2" fill="#93C5FD" />
+    <rect x="65" y="150" width="30" height="24" rx="2" fill="#93C5FD" />
+    <rect x="110" y="150" width="30" height="24" rx="2" fill="#93C5FD" />
+    <rect x="35" y="190" width="60" height="60" rx="4" fill="#1E293B" />
+    <!-- Roll-up Door Ribs -->
+    <line x1="35" y1="202" x2="95" y2="202" stroke="#475569" stroke-width="2" />
+    <line x1="35" y1="214" x2="95" y2="214" stroke="#475569" stroke-width="2" />
+    <line x1="35" y1="226" x2="95" y2="226" stroke="#475569" stroke-width="2" />
+    <line x1="35" y1="238" x2="95" y2="238" stroke="#475569" stroke-width="2" />
+  </g>
+
+  <!-- 2. FINANCIAL: Glass Office High-Rise -->
+  <g id="building-financial" transform="translate(370, 560)">
+    <rect x="0" y="0" width="105" height="200" rx="8" fill="#1E40AF" />
+    <!-- Glass curtain wall grid -->
+    <g fill="#60A5FA" opacity="0.85">
+      <rect x="10" y="15" width="18" height="25" rx="3" />
+      <rect x="35" y="15" width="18" height="25" rx="3" />
+      <rect x="60" y="15" width="18" height="25" rx="3" />
+      <rect x="80" y="15" width="15" height="25" rx="3" />
+
+      <rect x="10" y="50" width="18" height="25" rx="3" />
+      <rect x="35" y="50" width="18" height="25" rx="3" />
+      <rect x="60" y="50" width="18" height="25" rx="3" />
+      <rect x="80" y="50" width="15" height="25" rx="3" />
+
+      <rect x="10" y="85" width="18" height="25" rx="3" />
+      <rect x="35" y="85" width="18" height="25" rx="3" />
+      <rect x="60" y="85" width="18" height="25" rx="3" />
+      <rect x="80" y="85" width="15" height="25" rx="3" />
+
+      <rect x="10" y="120" width="18" height="25" rx="3" />
+      <rect x="35" y="120" width="18" height="25" rx="3" />
+      <rect x="60" y="120" width="18" height="25" rx="3" />
+      <rect x="80" y="120" width="15" height="25" rx="3" />
+    </g>
+    <!-- Entrance Lobby -->
+    <rect x="30" y="160" width="45" height="40" rx="4" fill="#93C5FD" stroke="#1D4ED8" stroke-width="2" />
+  </g>
+
+  <!-- 3. HEALTHCARE: Hospital with Red Cross Sign -->
+  <g id="building-healthcare" transform="translate(540, 590)">
+    <!-- Hospital Main Building -->
+    <rect x="0" y="0" width="190" height="170" rx="10" fill="url(#hospitalWall)" stroke="#CBD5E1" stroke-width="2" />
+    <!-- Blue Trim Roof Banner -->
+    <rect x="0" y="0" width="190" height="45" rx="10" fill="#0284C7" />
+    <rect x="0" y="25" width="190" height="20" fill="#0284C7" />
+    <!-- Red Cross Emblem -->
+    <g transform="translate(95, 22)">
+      <circle cx="0" cy="0" r="14" fill="#FFFFFF" />
+      <rect x="-3" y="-9" width="6" height="18" rx="2" fill="#EF4444" />
+      <rect x="-9" y="-3" width="18" height="6" rx="2" fill="#EF4444" />
+    </g>
+    <text x="95" y="40" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">HOSPITAL</text>
+
+    <!-- Hospital Windows -->
+    <g fill="#38BDF8" opacity="0.9">
+      <rect x="20" y="60" width="25" height="22" rx="3" />
+      <rect x="55" y="60" width="25" height="22" rx="3" />
+      <rect x="110" y="60" width="25" height="22" rx="3" />
+      <rect x="145" y="60" width="25" height="22" rx="3" />
+
+      <rect x="20" y="92" width="25" height="22" rx="3" />
+      <rect x="55" y="92" width="25" height="22" rx="3" />
+      <rect x="110" y="92" width="25" height="22" rx="3" />
+      <rect x="145" y="92" width="25" height="22" rx="3" />
+    </g>
+
+    <!-- Emergency Entrance -->
+    <rect x="75" y="125" width="40" height="45" rx="4" fill="#0369A1" />
+    <rect x="80" y="130" width="14" height="40" rx="2" fill="#BAE6FD" />
+    <rect x="96" y="130" width="14" height="40" rx="2" fill="#BAE6FD" />
+  </g>
+
+  <!-- 4. SCHOOL & INSTITUTIONS: Brick Schoolhouse with Clock -->
+  <g id="building-school" transform="translate(800, 600)">
+    <!-- Main School Body -->
+    <rect x="0" y="45" width="170" height="115" rx="6" fill="url(#schoolWall)" />
+    <!-- Center Clock Tower -->
+    <rect x="55" y="0" width="60" height="70" fill="#C26D38" rx="4" />
+    <!-- Clock Tower Roof -->
+    <polygon points="50,0 85,-35 120,0" fill="#047857" />
+    <circle cx="85" cy="25" r="14" fill="#FFFFFF" stroke="#78350F" stroke-width="2" />
+    <line x1="85" y1="25" x2="85" y2="17" stroke="#1E293B" stroke-width="2" stroke-linecap="round" />
+    <line x1="85" y1="25" x2="92" y2="25" stroke="#1E293B" stroke-width="2" stroke-linecap="round" />
+
+    <!-- Pitched Roofs on Wings -->
+    <polygon points="-5,45 55,20 55,45" fill="#047857" />
+    <polygon points="115,45 115,20 175,45" fill="#047857" />
+
+    <!-- Arched Windows -->
+    <g fill="#BAE6FD">
+      <rect x="18" y="65" width="22" height="28" rx="10" />
+      <rect x="130" y="65" width="22" height="28" rx="10" />
+    </g>
+
+    <!-- School Portico Entrance -->
+    <polygon points="50,110 85,90 120,110" fill="#FFFFFF" />
+    <rect x="58" y="110" width="8" height="50" fill="#FFFFFF" />
+    <rect x="104" y="110" width="8" height="50" fill="#FFFFFF" />
+    <rect x="68" y="115" width="34" height="45" rx="4" fill="#0F766E" />
+  </g>
+
+  <!-- 5. E-COMMERCE & RETAIL: Local Storefront with Striped Awning -->
+  <g id="building-ecommerce" transform="translate(1040, 670)">
+    <!-- Storefront Box -->
+    <rect x="0" y="0" width="160" height="90" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
+    <!-- Shop Sign Badge -->
+    <rect x="45" y="-18" width="70" height="22" rx="6" fill="#F43F5E" />
+    <text x="80" y="-3" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" text-anchor="middle">SHOP</text>
+
+    <!-- Scalloped Striped Awning -->
+    <g transform="translate(-10, 0)">
+      <polygon points="10,0 170,0 180,24 0,24" fill="#EF4444" />
+      <!-- White stripes on awning -->
+      <polygon points="25,0 45,0 42,24 20,24" fill="#FFFFFF" />
+      <polygon points="65,0 85,0 82,24 60,24" fill="#FFFFFF" />
+      <polygon points="105,0 125,0 122,24 100,24" fill="#FFFFFF" />
+      <polygon points="145,0 165,0 162,24 140,24" fill="#FFFFFF" />
+      <!-- Scallop curves at awning bottom -->
+      <path d="M0,24 Q10,32 20,24 Q30,32 40,24 Q50,32 60,24 Q70,32 80,24 Q90,32 100,24 Q110,32 120,24 Q130,32 140,24 Q150,32 160,24 Q170,32 180,24" fill="#EF4444" />
+    </g>
+
+    <!-- Large Glass Showroom Display & Door -->
+    <rect x="15" y="36" width="55" height="48" rx="4" fill="#0284C7" opacity="0.8" />
+    <rect x="20" y="42" width="45" height="36" rx="2" fill="#BAE6FD" />
+    <!-- Mannequin / Product in window -->
+    <circle cx="42" cy="55" r="6" fill="#F59E0B" />
+    <path d="M36,68 L48,68 L46,62 L38,62 Z" fill="#F43F5E" />
+
+    <rect x="85" y="32" width="60" height="58" rx="4" fill="#0284C7" />
+    <rect x="90" y="36" width="22" height="54" rx="2" fill="#E0F2FE" />
+    <rect x="118" y="36" width="22" height="54" rx="2" fill="#E0F2FE" />
+  </g>
+
+  <!-- 6. REAL ESTATE: Suburban Home & Villa -->
+  <g id="building-realestate" transform="translate(1260, 620)">
+    <!-- House Main Structure -->
+    <rect x="0" y="40" width="180" height="100" rx="6" fill="#F1F5F9" />
+    <!-- Pitched Roof -->
+    <polygon points="-10,45 80,-5 170,45" fill="#334155" />
+    <polygon points="120,40 160,0 200,40" fill="#475569" />
+    <!-- Attic Triangular Window -->
+    <polygon points="80,15 65,35 95,35" fill="#38BDF8" stroke="#1E293B" stroke-width="2" />
+
+    <!-- Front Door & Porch Light -->
+    <rect x="40" y="75" width="26" height="65" rx="3" fill="#64748B" />
+    <circle cx="60" cy="108" r="2" fill="#F59E0B" />
+
+    <!-- Picture Window with Shutters -->
+    <rect x="85" y="65" width="45" height="35" rx="3" fill="#BAE6FD" stroke="#94A3B8" stroke-width="2" />
+    <rect x="75" y="65" width="8" height="35" rx="2" fill="#0284C7" />
+    <rect x="132" y="65" width="8" height="35" rx="2" fill="#0284C7" />
+
+    <!-- Garage Extension -->
+    <rect x="145" y="60" width="50" height="80" rx="4" fill="#E2E8F0" />
+    <rect x="150" y="80" width="40" height="60" rx="2" fill="#475569" />
+    <line x1="150" y1="95" x2="190" y2="95" stroke="#94A3B8" stroke-width="2" />
+    <line x1="150" y1="110" x2="190" y2="110" stroke="#94A3B8" stroke-width="2" />
+    <line x1="150" y1="125" x2="190" y2="125" stroke="#94A3B8" stroke-width="2" />
+  </g>
+
+  <!-- 7. HOSPITALITY: Modern Luxury Glass Hotel Tower -->
+  <g id="building-hospitality" transform="translate(1520, 500)">
+    <!-- Skyscraper Tower Body -->
+    <rect x="0" y="0" width="130" height="260" rx="10" fill="url(#hotelGlass)" />
+    <!-- Hotel Top Sign -->
+    <rect x="25" y="-20" width="80" height="24" rx="6" fill="#1E293B" />
+    <text x="65" y="-4" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">HOTEL</text>
+
+    <!-- Glass Facade Window Rows with Balconies -->
+    <g fill="#BAE6FD" opacity="0.95">
+      <rect x="15" y="20" width="22" height="18" rx="2" />
+      <rect x="45" y="20" width="22" height="18" rx="2" />
+      <rect x="75" y="20" width="22" height="18" rx="2" />
+
+      <rect x="15" y="50" width="22" height="18" rx="2" />
+      <rect x="45" y="50" width="22" height="18" rx="2" />
+      <rect x="75" y="50" width="22" height="18" rx="2" />
+
+      <rect x="15" y="80" width="22" height="18" rx="2" />
+      <rect x="45" y="80" width="22" height="18" rx="2" />
+      <rect x="75" y="80" width="22" height="18" rx="2" />
+
+      <rect x="15" y="110" width="22" height="18" rx="2" />
+      <rect x="45" y="110" width="22" height="18" rx="2" />
+      <rect x="75" y="110" width="22" height="18" rx="2" />
+
+      <rect x="15" y="140" width="22" height="18" rx="2" />
+      <rect x="45" y="140" width="22" height="18" rx="2" />
+      <rect x="75" y="140" width="22" height="18" rx="2" />
+
+      <rect x="15" y="170" width="22" height="18" rx="2" />
+      <rect x="45" y="170" width="22" height="18" rx="2" />
+      <rect x="75" y="170" width="22" height="18" rx="2" />
+    </g>
+
+    <!-- Grand Entrance Canopy -->
+    <polygon points="-10,225 140,225 130,215 0,215" fill="#F59E0B" />
+    <rect x="35" y="225" width="60" height="35" rx="3" fill="#FFFFFF" opacity="0.9" />
+  </g>
+
+  <!-- Palm Tree next to Hotel -->
+  <g transform="translate(1670, 680)">
+    <path d="M0,80 Q10,30 25,0" stroke="#78350F" stroke-width="8" fill="none" stroke-linecap="round" />
+    <!-- Fronds -->
+    <path d="M25,0 Q50,-30 70,-10" stroke="#15803D" stroke-width="6" fill="none" stroke-linecap="round" />
+    <path d="M25,0 Q40,-40 20,-50" stroke="#16A34A" stroke-width="6" fill="none" stroke-linecap="round" />
+    <path d="M25,0 Q-10,-35 -30,-20" stroke="#15803D" stroke-width="6" fill="none" stroke-linecap="round" />
+    <path d="M25,0 Q0,-45 -15,-55" stroke="#22C55E" stroke-width="6" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- 8. ENTERTAINMENT & MEDIA: Cinema Theater & Media Studio -->
+  <g id="building-entertainment" transform="translate(1730, 650)">
+    <rect x="0" y="0" width="160" height="110" rx="8" fill="url(#cinemaWall)" />
+    <rect x="15" y="15" width="130" height="55" rx="6" fill="#1E1B4B" />
+    <!-- Glowing Screen with Play Symbol -->
+    <rect x="20" y="20" width="120" height="45" rx="4" fill="#4338CA" />
+    <circle cx="80" cy="42" r="14" fill="#A855F7" />
+    <polygon points="76,34 88,42 76,50" fill="#FFFFFF" />
+
+    <!-- Theater Entrance -->
+    <rect x="50" y="80" width="60" height="30" rx="3" fill="#B45309" />
+  </g>
+
+  <!-- 9. BEAUTY & WELLNESS: Spa & Wellness Boutique -->
+  <g id="building-beauty" transform="translate(2040, 660)">
+    <!-- Spa Structure -->
+    <rect x="0" y="0" width="160" height="100" rx="10" fill="url(#spaWall)" />
+    <!-- Spa Sign Banner -->
+    <rect x="25" y="-18" width="110" height="24" rx="6" fill="#831843" />
+    <!-- Lotus Icon on sign -->
+    <path d="M45,-6 C45,-12 50,-15 50,-15 C50,-15 55,-12 55,-6 C50,-6 50,-6 45,-6 Z" fill="#F472B6" />
+    <text x="85" y="-3" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="10" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">SPA &amp; WELLNESS</text>
+
+    <!-- Large Framed Glass Windows -->
+    <rect x="15" y="20" width="55" height="65" rx="4" fill="#FCE7F3" stroke="#BE185D" stroke-width="2" />
+    <path d="M42,40 C42,30 48,25 48,25 C48,25 54,30 54,40 C48,40 48,40 42,40 Z" fill="#EC4899" />
+    <path d="M35,45 C35,38 42,32 42,32 C42,32 46,38 43,45 Z" fill="#F472B6" />
+    <path d="M61,45 C61,38 54,32 54,32 C54,32 50,38 53,45 Z" fill="#F472B6" />
+
+    <!-- Glass Entrance Door -->
+    <rect x="85" y="20" width="60" height="80" rx="4" fill="#FCE7F3" stroke="#BE185D" stroke-width="2" />
+    <rect x="90" y="25" width="22" height="70" rx="2" fill="#FFFFFF" />
+    <rect x="118" y="25" width="22" height="70" rx="2" fill="#FFFFFF" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- FOREGROUND LANDSCAPING, TREES & GREENERY -->
+  <!-- ============================================== -->
+  <!-- Lush Green Trees positioned between sectors -->
+  <!-- Tree 1 -->
+  <g transform="translate(320, 710)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="26" ry="34" fill="#15803D" />
+    <ellipse cx="14" cy="5" rx="18" ry="24" fill="#22C55E" />
+  </g>
+  <!-- Tree 2 -->
+  <g transform="translate(500, 710)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="26" ry="34" fill="#16A34A" />
+    <ellipse cx="24" cy="5" rx="18" ry="24" fill="#4ADE80" />
+  </g>
+  <!-- Tree 3 -->
+  <g transform="translate(750, 715)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="28" ry="36" fill="#15803D" />
+    <ellipse cx="15" cy="5" rx="18" ry="24" fill="#22C55E" />
+  </g>
+  <!-- Tree 4 -->
+  <g transform="translate(1000, 720)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="24" ry="30" fill="#16A34A" />
+  </g>
+  <!-- Tree 5 -->
+  <g transform="translate(1220, 715)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="26" ry="34" fill="#15803D" />
+  </g>
+  <!-- Tree 6 -->
+  <g transform="translate(1480, 710)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="28" ry="36" fill="#16A34A" />
+  </g>
+  <!-- Tree 7 -->
+  <g transform="translate(1910, 715)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="26" ry="34" fill="#15803D" />
+  </g>
+  <!-- Tree 8 -->
+  <g transform="translate(2000, 720)">
+    <rect x="16" y="20" width="8" height="40" fill="#78350F" rx="3" />
+    <ellipse cx="20" cy="15" rx="24" ry="30" fill="#22C55E" />
+  </g>
+
+  <!-- Trimmed Green Hedges along sidewalk -->
+  <path d="M0,760 Q300,750 600,760 Q900,750 1200,760 Q1500,750 1800,760 Q2100,750 2400,760 L2400,775 L0,775 Z" fill="#16A34A" />
+
+  <!-- ============================================== -->
+  <!-- SIDEWALK & MODERN HIGHWAY STREET -->
+  <!-- ============================================== -->
+  <!-- Sidewalk -->
+  <rect x="0" y="770" width="2400" height="40" fill="url(#sidewalkGrad)" />
+  <rect x="0" y="805" width="2400" height="8" fill="url(#curbGrad)" />
+
+  <!-- Asphalt Roadway -->
+  <rect x="0" y="813" width="2400" height="207" fill="url(#roadGrad)" />
+
+  <!-- Road White Dashed Centerline -->
+  <line x1="0" y1="915" x2="2400" y2="915" stroke="#FFFFFF" stroke-width="8" stroke-dasharray="70,50" opacity="0.9" />
+
+  <!-- Street Lighting Lamp Posts -->
+  <g transform="translate(450, 680)">
+    <path d="M0,100 L0,20 Q0,0 25,0 L35,0" stroke="#64748B" stroke-width="4" fill="none" stroke-linecap="round" />
+    <polygon points="30,0 42,0 46,10 26,10" fill="#475569" />
+    <ellipse cx="36" cy="10" rx="8" ry="3" fill="#FEF08A" />
+  </g>
+  <g transform="translate(1150, 680)">
+    <path d="M0,100 L0,20 Q0,0 25,0 L35,0" stroke="#64748B" stroke-width="4" fill="none" stroke-linecap="round" />
+    <polygon points="30,0 42,0 46,10 26,10" fill="#475569" />
+    <ellipse cx="36" cy="10" rx="8" ry="3" fill="#FEF08A" />
+  </g>
+  <g transform="translate(1850, 680)">
+    <path d="M0,100 L0,20 Q0,0 25,0 L35,0" stroke="#64748B" stroke-width="4" fill="none" stroke-linecap="round" />
+    <polygon points="30,0 42,0 46,10 26,10" fill="#475569" />
+    <ellipse cx="36" cy="10" rx="8" ry="3" fill="#FEF08A" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- CARS ON THE ROAD -->
+  <!-- ============================================== -->
+  <!-- Car 1: Blue Modern Sedan (Left lane) -->
+  <g transform="translate(260, 820) scale(1.1)">
+    <!-- Car Shadow -->
+    <ellipse cx="65" cy="50" rx="65" ry="8" fill="#1E293B" opacity="0.6" />
+    <!-- Car Body -->
+    <path d="M10,40 L20,25 L45,15 L90,15 L115,25 L125,40 L5,40 Z" fill="#0284C7" />
+    <!-- Car Roof / Cabin -->
+    <path d="M35,25 L48,16 L85,16 L100,25 Z" fill="#BAE6FD" />
+    <!-- Headlights & Taillights -->
+    <circle cx="123" cy="35" r="4" fill="#FEF08A" />
+    <circle cx="8" cy="35" r="3" fill="#EF4444" />
+    <!-- Wheels -->
+    <circle cx="35" cy="45" r="12" fill="#1E293B" />
+    <circle cx="35" cy="45" r="6" fill="#94A3B8" />
+    <circle cx="98" cy="45" r="12" fill="#1E293B" />
+    <circle cx="98" cy="45" r="6" fill="#94A3B8" />
+  </g>
+
+  <!-- Car 2: Dark Luxury SUV (Center driveway) -->
+  <g transform="translate(1380, 810) scale(1.05)">
+    <!-- Car Shadow -->
+    <ellipse cx="65" cy="50" rx="60" ry="7" fill="#1E293B" opacity="0.6" />
+    <!-- Car Body -->
+    <path d="M5,42 L12,24 L40,16 L95,16 L118,26 L125,42 Z" fill="#1E293B" />
+    <!-- Windows -->
+    <path d="M36,22 L45,18 L90,18 L108,24 Z" fill="#94A3B8" />
+    <!-- Wheels -->
+    <circle cx="32" cy="45" r="11" fill="#0F172A" />
+    <circle cx="32" cy="45" r="5" fill="#E2E8F0" />
+    <circle cx="96" cy="45" r="11" fill="#0F172A" />
+    <circle cx="96" cy="45" r="5" fill="#E2E8F0" />
+  </g>
+
+  <!-- Car 3: White Sleek Coupe (Right lane) -->
+  <g transform="translate(1780, 875) scale(1.15)">
+    <!-- Car Shadow -->
+    <ellipse cx="65" cy="45" rx="65" ry="8" fill="#0F172A" opacity="0.5" />
+    <!-- Body -->
+    <path d="M10,36 L25,22 L50,14 L85,14 L110,24 L125,36 Z" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" />
+    <path d="M40,22 L52,15 L82,15 L98,22 Z" fill="#0284C7" />
+    <!-- Lights -->
+    <circle cx="123" cy="32" r="4" fill="#FEF08A" />
+    <circle cx="8" cy="32" r="3" fill="#EF4444" />
+    <!-- Wheels -->
+    <circle cx="35" cy="40" r="11" fill="#1E293B" />
+    <circle cx="35" cy="40" r="5" fill="#CBD5E1" />
+    <circle cx="98" cy="40" r="11" fill="#1E293B" />
+    <circle cx="98" cy="40" r="5" fill="#CBD5E1" />
+  </g>
+
+  <!-- Large Foreground Blur Foliage at Bottom Corners -->
+  <g opacity="0.9">
+    <ellipse cx="30" cy="980" rx="90" ry="60" fill="#15803D" />
+    <ellipse cx="90" cy="960" rx="70" ry="50" fill="#22C55E" />
+    <ellipse cx="2370" cy="980" rx="90" ry="60" fill="#15803D" />
+    <ellipse cx="2300" cy="960" rx="70" ry="50" fill="#22C55E" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- DOTTED CONNECTOR LINES (11 SECTORS) -->
+  <!-- ============================================== -->
+  <g stroke="#38BDF8" stroke-width="3" stroke-dasharray="6,6" fill="none" opacity="0.7">
+    <!-- 1. Industry -->
+    <path d="M260,390 Q240,460 210,540" />
+    <!-- 2. Financial -->
+    <path d="M425,505 Q415,540 420,580" />
+    <!-- 3. Healthcare -->
+    <path d="M635,465 Q620,530 635,590" />
+    <!-- 4. Security -->
+    <path d="M810,400 Q800,480 810,540" />
+    <!-- 5. School -->
+    <path d="M1025,515 Q1000,560 920,600" />
+    <!-- 6. E-Commerce -->
+    <path d="M1230,465 Q1210,560 1140,670" />
+    <!-- 7. Real Estate -->
+    <path d="M1440,515 Q1430,570 1380,620" />
+    <!-- 8. Hospitality -->
+    <path d="M1640,360 Q1620,440 1590,500" />
+    <!-- 9. Entertainment -->
+    <path d="M1820,515 Q1810,590 1800,650" />
+    <!-- 10. Travel -->
+    <path d="M2010,505 Q1980,560 1960,600" />
+    <!-- 11. Beauty -->
+    <path d="M2190,420 Q2180,540 2150,660" />
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 11 FLOATING SECTOR BADGES / CARDS -->
+  <!-- ============================================== -->
+
+  <!-- 1. INDUSTRY BADGE -->
+  <g id="badge-industry" transform="translate(195, 275)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="130" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="65" cy="45" r="26" fill="#3B82F6" />
+    <!-- Factory Icon -->
+    <g transform="translate(52, 32)" fill="#FFFFFF">
+      <polygon points="0,26 8,16 8,26 16,16 16,26 26,16 26,26 0,26" />
+      <rect x="0" y="20" width="26" height="6" />
+      <line x1="4" y1="8" x2="4" y2="16" stroke="#FFFFFF" stroke-width="2" />
+      <line x1="12" y1="8" x2="12" y2="16" stroke="#FFFFFF" stroke-width="2" />
+      <line x1="20" y1="8" x2="20" y2="16" stroke="#FFFFFF" stroke-width="2" />
+    </g>
+    <text x="65" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="15" fill="#1E293B" text-anchor="middle">Industry</text>
+  </g>
+
+  <!-- 2. FINANCIAL BADGE -->
+  <g id="badge-financial" transform="translate(360, 390)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="130" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="65" cy="45" r="26" fill="#9333EA" />
+    <!-- Financial Hand + Coin Icon -->
+    <g transform="translate(52, 32)" fill="#FFFFFF">
+      <circle cx="13" cy="7" r="7" fill="#FACC15" stroke="#9333EA" stroke-width="1.5" />
+      <text x="13" y="10" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="9" fill="#7E22CE" text-anchor="middle">$</text>
+      <path d="M3,20 C8,18 16,18 23,22 L20,25 C14,23 9,23 3,25 Z" />
+    </g>
+    <text x="65" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="15" fill="#1E293B" text-anchor="middle">Financial</text>
+  </g>
+
+  <!-- 3. HEALTHCARE BADGE -->
+  <g id="badge-healthcare" transform="translate(570, 350)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="130" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="65" cy="45" r="26" fill="#E11D48" />
+    <!-- Heart Icon with Pulse -->
+    <g transform="translate(52, 32)" fill="#FFFFFF">
+      <path d="M13,24 C13,24 2,17 2,8 C2,3 6,0 10,0 C12,0 13,2 13,2 C13,2 14,0 16,0 C20,0 24,3 24,8 C24,17 13,24 13,24 Z" />
+      <polyline points="5,9 9,9 11,5 14,13 16,9 20,9" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <text x="65" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="#1E293B" text-anchor="middle">Healthcare</text>
+  </g>
+
+  <!-- 4. SECURITY BADGE -->
+  <g id="badge-security" transform="translate(745, 285)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="130" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="65" cy="45" r="26" fill="#0284C7" />
+    <!-- Shield Keyhole Icon -->
+    <g transform="translate(52, 32)" fill="#FFFFFF">
+      <path d="M13,2 L3,6 L3,14 C3,20 13,26 13,26 C13,26 23,20 23,14 L23,6 Z" />
+      <circle cx="13" cy="11" r="3" fill="#0284C7" />
+      <polygon points="12,11 14,11 15,18 11,18" fill="#0284C7" />
+    </g>
+    <text x="65" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="15" fill="#1E293B" text-anchor="middle">Security</text>
+  </g>
+
+  <!-- 5. SCHOOL & INSTITUTIONS BADGE -->
+  <g id="badge-school" transform="translate(950, 400)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="150" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="75" cy="45" r="26" fill="#EA580C" />
+    <!-- Graduation Cap Icon -->
+    <g transform="translate(62, 32)" fill="#FFFFFF">
+      <polygon points="13,2 26,9 13,16 0,9" />
+      <path d="M5,12 L5,20 C5,23 9,25 13,25 C17,25 21,23 21,20 L21,12" fill="none" stroke="#FFFFFF" stroke-width="2" />
+      <path d="M26,9 L26,20" stroke="#FFFFFF" stroke-width="2" />
+      <circle cx="26" cy="21" r="2" fill="#FFFFFF" />
+    </g>
+    <text x="75" y="88" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" fill="#1E293B" text-anchor="middle">School &amp;</text>
+    <text x="75" y="103" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" fill="#1E293B" text-anchor="middle">Institutions</text>
+  </g>
+
+  <!-- 6. E-COMMERCE BADGE -->
+  <g id="badge-ecommerce" transform="translate(1160, 350)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="140" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="70" cy="45" r="26" fill="#7C3AED" />
+    <!-- Shopping Cart Icon -->
+    <g transform="translate(57, 32)" fill="#FFFFFF">
+      <path d="M0,2 L4,2 L8,18 L22,18 L25,7 L6,7" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="9" cy="22" r="3" fill="#FFFFFF" />
+      <circle cx="20" cy="22" r="3" fill="#FFFFFF" />
+    </g>
+    <text x="70" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="#1E293B" text-anchor="middle">E-Commerce</text>
+  </g>
+
+  <!-- 7. REAL ESTATE BADGE -->
+  <g id="badge-realestate" transform="translate(1370, 400)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="140" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="70" cy="45" r="26" fill="#0891B2" />
+    <!-- House Icon -->
+    <g transform="translate(57, 32)" fill="#FFFFFF">
+      <polygon points="13,2 0,14 4,14 4,24 22,24 22,14 26,14" />
+      <rect x="10" y="14" width="6" height="10" fill="#0891B2" />
+    </g>
+    <text x="70" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="#1E293B" text-anchor="middle">Real Estate</text>
+  </g>
+
+  <!-- 8. HOSPITALITY BADGE -->
+  <g id="badge-hospitality" transform="translate(1570, 245)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="140" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="70" cy="45" r="26" fill="#4F46E5" />
+    <!-- Hotel Bed Icon -->
+    <g transform="translate(57, 32)" fill="#FFFFFF">
+      <rect x="2" y="12" width="22" height="10" rx="3" />
+      <circle cx="7" cy="8" r="4" />
+      <rect x="1" y="6" width="3" height="18" rx="1" />
+      <rect x="22" y="10" width="3" height="14" rx="1" />
+    </g>
+    <text x="70" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="#1E293B" text-anchor="middle">Hospitality</text>
+  </g>
+
+  <!-- 9. ENTERTAINMENT & MEDIA BADGE -->
+  <g id="badge-entertainment" transform="translate(1740, 400)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="160" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="80" cy="45" r="26" fill="#16A34A" />
+    <!-- Media Video Play Screen Icon -->
+    <g transform="translate(67, 32)" fill="#FFFFFF">
+      <rect x="1" y="2" width="24" height="18" rx="4" fill="none" stroke="#FFFFFF" stroke-width="2.5" />
+      <polygon points="10,7 18,11 10,15" fill="#FFFFFF" />
+      <line x1="8" y1="24" x2="18" y2="24" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+    </g>
+    <text x="80" y="88" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" fill="#1E293B" text-anchor="middle">Entertainment &amp;</text>
+    <text x="80" y="103" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" fill="#1E293B" text-anchor="middle">Media</text>
+  </g>
+
+  <!-- 10. TRAVEL BADGE -->
+  <g id="badge-travel" transform="translate(1945, 390)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="130" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="65" cy="45" r="26" fill="#2563EB" />
+    <!-- Passenger / Travel Icon -->
+    <g transform="translate(52, 32)" fill="#FFFFFF">
+      <circle cx="13" cy="7" r="5" />
+      <path d="M4,24 C4,17 8,14 13,14 C18,14 22,17 22,24 Z" />
+    </g>
+    <text x="65" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="15" fill="#1E293B" text-anchor="middle">Travel</text>
+  </g>
+
+  <!-- 11. BEAUTY & WELLNESS BADGE -->
+  <g id="badge-beauty" transform="translate(2110, 305)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="160" height="115" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="2" />
+    <circle cx="80" cy="45" r="26" fill="#DB2777" />
+    <!-- Lotus Flower Icon -->
+    <g transform="translate(67, 32)" fill="#FFFFFF">
+      <path d="M13,2 C13,2 6,10 6,18 C6,22 9,25 13,25 C17,25 20,22 20,18 C20,10 13,2 13,2 Z" />
+      <path d="M6,14 C2,16 0,20 1,23 C2,25 6,26 10,24 C7,22 6,18 6,14 Z" />
+      <path d="M20,14 C24,16 26,20 25,23 C24,25 20,26 16,24 C19,22 20,18 20,14 Z" />
+    </g>
+    <text x="80" y="96" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="#1E293B" text-anchor="middle">Beauty &amp; Wellness</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- TOP CENTER HERO BRANDING & HEADLINE -->
+  <!-- ============================================== -->
+  <!-- Floating Top Pill Badge -->
+  <g transform="translate(1050, 48)">
+    <rect x="0" y="0" width="300" height="42" rx="21" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1.5" />
+    <text x="150" y="26" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" fill="#1D4ED8" text-anchor="middle" letter-spacing="2.5">WE SERVE ALL INDUSTRIES</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="1200" y="145" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" fill="#0F172A" text-anchor="middle" letter-spacing="-1">
+    Digital Solutions <tspan fill="#2563EB">for Every Business</tspan>
+  </text>
+
+  <!-- Subtitle Paragraph -->
+  <text x="1200" y="195" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="20" fill="#475569" text-anchor="middle">
+    From local shops to global brands, we help businesses across industries
+  </text>
+  <text x="1200" y="225" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="20" fill="#475569" text-anchor="middle">
+    achieve their digital goals with effective marketing strategies.
+  </text>
+
+</svg>
+`;
+
+async function generateAssets() {
+  const imagesDir = path.join(process.cwd(), 'public', 'images');
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+  }
+
+  // Save SVG
+  const svgPath = path.join(imagesDir, 'industries-banner.svg');
+  fs.writeFileSync(svgPath, svg.trim());
+  console.log('Saved SVG to:', svgPath);
+
+  // Convert to high-resolution PNG (2400 x 1020)
+  const pngPath = path.join(imagesDir, 'industries-banner.png');
+  await sharp(Buffer.from(svg))
+    .png({ quality: 95, compressionLevel: 8 })
+    .toFile(pngPath);
+  console.log('Saved PNG to:', pngPath);
+
+  // Also save WebP version for modern browsers
+  const webpPath = path.join(imagesDir, 'industries-banner.webp');
+  await sharp(Buffer.from(svg))
+    .webp({ quality: 92 })
+    .toFile(webpPath);
+  console.log('Saved WebP to:', webpPath);
+}
+
+generateAssets().catch(err => {
+  console.error('Error generating assets:', err);
+  process.exit(1);
+});
